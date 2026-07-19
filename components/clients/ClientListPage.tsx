@@ -48,6 +48,7 @@ export default function ClientListPage() {
 
   // Keep the input in sync with the URL (Back, Forward, Clear filters)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInputSearch(urlSearch);
   }, [urlSearch]);
 
@@ -88,7 +89,6 @@ export default function ClientListPage() {
       );
     }, DEBOUNCE_MS);
     return () => clearTimeout(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputSearch]);
 
   // --- Filter handlers ---
