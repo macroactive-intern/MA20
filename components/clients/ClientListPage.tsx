@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import ClientFilters from "./ClientFilters";
 import ClientList from "./ClientList";
+import ClientListSkeleton from "./ClientListSkeleton";
 import type { Client } from "@/app/lib/types";
 
 const DEBOUNCE_MS = 300;
@@ -102,6 +103,7 @@ export default function ClientListPage() {
 
   // TODO Step 10: replace with SWR data
   const clients: Client[] = [];
+  const isLoading = false; // TODO Step 10: from useSWR
 
   return (
     <div className="space-y-4">
@@ -114,7 +116,7 @@ export default function ClientListPage() {
         onSortChange={handleSortChange}
         onClearFilters={handleClearFilters}
       />
-      <ClientList clients={clients} />
+      {isLoading ? <ClientListSkeleton /> : <ClientList clients={clients} />}
     </div>
   );
 }
