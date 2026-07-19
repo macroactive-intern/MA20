@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 export default function ClientListPage() {
@@ -7,9 +8,66 @@ export default function ClientListPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  void searchParams;
-  void router;
-  void pathname;
+  // Refs prevent stale closures inside debounce and pagination effects
+  const searchParamsRef = useRef(searchParams);
+  const routerRef = useRef(router);
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+    routerRef.current = router;
+    pathnameRef.current = pathname;
+  });
+
+  // --- Read URL values with safe defaults ---
+  const urlSearch = searchParams.get("search") ?? "";
+  const urlStatus = searchParams.get("status") ?? "";
+  const urlSort = searchParams.get("sort") ?? "name";
+  const urlPage = (() => {
+    const p = parseInt(searchParams.get("page") ?? "1", 10);
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  })();
+
+  // Temporary local state: only the text currently visible in the search
+  // input while the 300 ms debounce is running. The URL remains the
+  // canonical applied filter state and drives the SWR key.
+  const [inputSearch, setInputSearch] = useState(urlSearch);
+
+  // Keep the input in sync with the URL (Back, Forward, Clear filters)
+  useEffect(() => {
+    setInputSearch(urlSearch);
+  }, [urlSearch]);
+
+  // --- Query-update helpers ---
+
+  // Used by filter handlers (Steps 9+): resets page, preserves other params
+  function buildFilterUrl(overrides: Record<string, string | null>): string {
+    const params = new URLSearchParams(searchParamsRef.current.toString());
+    params.delete("page");
+    for (const [key, value] of Object.entries(overrides)) {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    }
+    const qs = params.toString();
+    return qs ? `${pathnameRef.current}?${qs}` : pathnameRef.current;
+  }
+
+  // Used by pagination (Step 13+): page 1 is the default so it is omitted
+  function buildPageUrl(page: number): string {
+    const params = new URLSearchParams(searchParamsRef.current.toString());
+    if (page <= 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(page));
+    }
+    const qs = params.toString();
+    return qs ? `${pathnameRef.current}?${qs}` : pathnameRef.current;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  void urlStatus, urlSort, urlPage, inputSearch, buildFilterUrl, buildPageUrl, routerRef;
 
   return <div />;
 }
