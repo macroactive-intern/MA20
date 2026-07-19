@@ -2,12 +2,20 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import useSWR from "swr";
 import ClientFilters from "./ClientFilters";
 import ClientList from "./ClientList";
 import ClientListSkeleton from "./ClientListSkeleton";
-import type { Client } from "@/app/lib/types";
+import ClientPagination from "./ClientPagination";
+import type { ClientsApiResponse } from "@/app/lib/types";
 
 const DEBOUNCE_MS = 300;
+
+async function fetcher(url: string): Promise<ClientsApiResponse> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json() as Promise<ClientsApiResponse>;
+}
 
 export default function ClientListPage() {
   const searchParams = useSearchParams();
@@ -98,12 +106,23 @@ export default function ClientListPage() {
     router.replace(pathname);
   }
 
-  void urlPage;
-  void buildPageUrl;
+  // --- SWR data fetching ---
+  const swrKey = (() => {
+    const params = new URLSearchParams();
+    if (urlSearch) params.set("search", urlSearch);
+    if (urlStatus) params.set("status", urlStatus);
+    if (urlSort !== "name") params.set("sort", urlSort);
+    if (urlPage > 1) params.set("page", String(urlPage));
+    const qs = params.toString();
+    return qs ? `/api/clients?${qs}` : "/api/clients";
+  })();
 
-  // TODO Step 10: replace with SWR data
-  const clients: Client[] = [];
-  const isLoading = false; // TODO Step 10: from useSWR
+  const { data, error, isLoading } = useSWR<ClientsApiResponse>(swrKey, fetcher);
+
+  const clients = data?.data ?? [];
+  const currentPage = data?.meta?.current_page ?? urlPage;
+  const lastPage = data?.meta?.last_page ?? 1;
+  const total = data?.meta?.total ?? 0;
 
   return (
     <div className="space-y-4">
@@ -116,7 +135,19 @@ export default function ClientListPage() {
         onSortChange={handleSortChange}
         onClearFilters={handleClearFilters}
       />
+      {error && (
+        <p className="text-sm text-red-600">Failed to load clients.</p>
+      )}
       {isLoading ? <ClientListSkeleton /> : <ClientList clients={clients} />}
+      {!isLoading && !error && lastPage > 1 && (
+        <ClientPagination
+          currentPage={currentPage}
+          lastPage={lastPage}
+          total={total}
+          onPrevious={() => router.push(buildPageUrl(currentPage - 1))}
+          onNext={() => router.push(buildPageUrl(currentPage + 1))}
+        />
+      )}
     </div>
   );
 }
