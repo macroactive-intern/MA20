@@ -519,19 +519,19 @@ Suspense
 The Client Component using useSearchParams will be wrapped in <Suspense> by the Server Component page.
 
 Implementation order
-Create the project and install the required packages.
-Configure Vitest and React Testing Library.
-Add shared client and API response types.
-Write the required failing tests.
-Add the mock client data.
-Build the /api/clients route.
-Build the page and Suspense boundary.
-Build the filters and URL update helper.
-Add the 300 ms search debounce.
-Add the SWR key and data fetching.
-Build the client list and status badges.
-Add loading, empty, and error states.
-Add pagination.
+Set up the project and connect to GitHub.
+Write documentation (UNDERSTANDING.md, ESTIMATE.md, APPROACH.md).
+Finish project setup — install testing packages and configure Vitest.
+Write the failing tests (search URL, debounce, clear filters, and additional tests).
+Add mock client data (30+ clients with all three statuses and varied join dates).
+Build the /api/clients route (search, status, sort, pagination, edge cases).
+Build the page structure and Suspense boundary.
+Implement URL-derived state and the query-update helper.
+Build the filter controls (search with debounce, status, sort, clear).
+Build SWR data fetching (fetcher, dynamic key, loading and error handling).
+Build the client list UI and status badges.
+Build the loading skeleton.
+Build pagination (Previous, Next, disabled states).
 Make the tests pass.
-Run tests, linting, type checks, and the production build.
-Add failing and passing terminal output to BEFORE-AFTER.md.
+Run quality checks (lint, TypeScript, tests, production build).
+Complete BEFORE-AFTER.md with failing and passing terminal output.
