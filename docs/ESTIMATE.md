@@ -39,24 +39,34 @@ Step 4
 
     Test implementation
 
-                1. Set up test utilities
-                                Configure Testing Library
-                                Add jsdom setup if needed
-                                Mock fetch where required
-                                Clear localStorage between tests
+                1. Search URL test
+                                Render the filter controls.
+                                Type into the search field.
+                                Advance the debounce timer.
+                                Confirm router.replace() receives a URL containing the search parameter.
+                                15.2 Debounce test
+                                Type multiple characters quickly.
+                                Confirm no router update occurs immediately.
+                                Advance less than 300 ms.
+                                Confirm no update.
+                                Advance to 300 ms.
+                                Confirm only the final search value is written.
 
-                2. Write failing tests first
-                                Test Next does not advance if required fields are empty
-                                Test Back preserves Step 2 data
-                                Test wizard state saves to localStorage on step change
-
-                3. Run tests and capture failing output
-                                Add failing output to BEFORE-AFTER.md
-
-                4. Implement/fix code until tests pass
-                5. Commit tests and implementation
-                                First failing test commit if required by workflow
-                                Then passing implementation commit
+                2. Clear filters test
+                                Start with search, status, sort, and page parameters.
+                                Click Clear filters.
+                                Confirm navigation removes all query parameters.
+                                Confirm the destination is /clients.
+                
+                3. Additional useful tests
+                                Status changes immediately.
+                                Sort changes immediately.
+                                Filter changes remove or reset page.
+                                Previous is disabled on page 1.
+                                Next is disabled on the final page.
+                                Pagination uses push().
+                                Filters use replace().
+                                Search input resynchronizes after URL changes.
 
                                                                                                         90 mins
 
@@ -64,25 +74,24 @@ Step 4
 
 Step 5
 
-    API route implementation
+    Mock client data
 
-                1. Create route handler
-                                File: app/api/onboarding/route.ts
+                1. Define the client shape
+                                Add id.
+                                Add name.
+                                Add email.
+                                Add status.
+                                Add an internal join-date field.
                 
-                2. Implement POST handler
-                                Parse JSON request body
-                                Validate required fields
-                                Store submitted data in module-level variable
-                                Return success JSON on valid request
-                                Return error JSON on invalid request
-                
-                3. helper
-                                Add GET route for debugging stored submission, only if useful
-                
-                4. Test API manually
-                                Submit valid payload
-                                Submit invalid payload
-                                Confirm response shape matches brief
+                2. Seed clients
+                                Create at least 30 mock clients.
+                                Include all three statuses:
+                                active
+                                cancelled
+                                past_due
+                                Include varied names and emails.
+                                Include varied join dates.
+                                Include enough data for multiple pages.
 
                                                                                                         40 mins
 
@@ -90,72 +99,231 @@ Step 5
 
 Step 6                
 
-    Wizard implementation
+    Build the API route
 
-                1. Create type definitions
-                                Define OnboardingFormData
-                                Define step field groups
-                                Define allowed values for goal and macro split
+                1. Create the route handler
+                                Add app/api/clients/route.ts.
+                                Handle GET requests.
+                                Read query parameters from the request URL.
                 
-                2. Build parent wizard
-                                Add use client
-                                Add default empty form data
-                                Add currentStep
-                                Add errors
-                                Add isSubmitting
-                                Add submitError
-                                Add successMessage
+                2. Normalize API inputs
+                                Trim search input.
+                                Make search case-insensitive.
+                                Validate status.
+                                Validate sort.
+                                Parse page as a positive integer.
+                                Fall back to safe defaults for invalid values.
                 
-                3. Build progress indicator
-                                Display Step X of 3
+                3. Implement search
+                                Match partial names.
+                                Match partial email addresses.
+                                Combine name and email matching with OR logic.
                 
-                4. Build Step 1 form
-                                First name input
-                                Last name input
-                                Date of birth input
-                                Timezone input/select
-                                Display field errors
+                4. Implement status filtering
+                                Return all clients when status is empty.
+                                Filter exact status values when provided.
                 
-                5. Build Step 2 form
-                                Goal select
-                                Activity level select/input
-                                Current weight input
-                                Height input
-                                Display field errors
+                5. Implement sorting
+                                Sort names alphabetically for sort=name.
+                                Sort newest first for sort=joined.
+                                Add a stable secondary sort, such as id.
                 
-                6. Build Step 3 form
-                                Macro split select
-                                Dietary restrictions textarea
-                                Display field errors
+                6. Implement pagination
+                                Use 10 clients per page.
+                                Calculate total results.
+                                Calculate the last page.
+                                Select the correct page of data.
+                                Return pagination metadata.
                 
-                7. Build navigation
-                                Hide/disable Back on Step 1
-                                Show Next on Step 1 and Step 2
-                                Show Finish on Step 3
-                                Back decreases step
-                                Next validates current step before advancing
-                                Finish validates Step 3 and submits all data
-                
-                8. Preserve data between steps
-                                Ensure Step 2 values stay populated after Back to Step 1 and forward again
-                
-                9. Add draft save
-                                Save wizard state to localStorage when form data or step changes
-                                Restore wizard state on first client load
-                                Clear draft after successful submission
-                
-                10. Add submission behavior
-                                Send one fetch('/api/onboarding') call
-                                Use method POST
-                                Send complete profile JSON
-                                Show API error on failure
-                                Do not reset data on failure
-                                Clear draft on success
-                                                                                                        90 mins
+                7. Return the API response
+                                Return data.
+                                Return meta.current_page.
+                                Return meta.total.
+                                Return meta.per_page.
+                                Return meta.last_page.
+                                                                                                        30 mins
 
 ----------------------------------------------------------------------------------------------------------------
 
 Step 7
+
+    Build the page structure
+
+                1. Create the page route
+                                Add the /clients page.
+                                Keep the page itself as a Server Component where possible.
+                                Render the interactive list component.
+                
+                2. Add Suspense
+                                Wrap the Client Component in <Suspense>.
+                                Use a loading skeleton as the fallback.
+                
+                3. Create the Client Component
+                                Add "use client".
+                                Read URL parameters with useSearchParams.
+                                Read the route path if needed.
+                                Access navigation through useRouter.
+                                                                                                        40 mins
+
+----------------------------------------------------------------------------------------------------------------
+
+Step 8
+
+    Implement URL-derived state
+
+                1. Read current values
+                                Read search.
+                                Read status.
+                                Read sort.
+                                Read page.
+                                Apply defaults for missing or invalid values.
+                
+                2. Create a query-update helper
+                                Copy the current parameters into URLSearchParams.
+                                Add non-default values.
+                                Remove default or empty values.
+                                Reset page when filters change.
+                                Build the final URL safely.
+                
+                3. Handle browser navigation
+                                Ensure Back and Forward update the controls.
+                                Synchronize the search input when URL parameters change.
+                                Avoid storing the full applied filter state separately in useState.
+                                                                                                        30 mins
+
+----------------------------------------------------------------------------------------------------------------
+
+Step 9
+
+    Build the filter controls
+
+                1. Search field
+                                Display the current URL search value.
+                                Maintain temporary draft text while typing.
+                                Debounce changes by 300 ms.
+                                Cancel the previous timer when another character is typed.
+                                Update the URL with router.replace().
+                                Reset page to 1.
+                
+                2. Status dropdown
+                                Add All.
+                                Add Active.
+                                Add Cancelled.
+                                Add Past Due.
+                                Update the URL immediately.
+                                Use router.replace().
+                                Reset page to 1.
+                
+                3. Sort dropdown
+                                Add Name A–Z.
+                                Add Most Recently Joined.
+                                Update the URL immediately.
+                                Use router.replace().
+                                Reset page to 1.
+                
+                4. Clear filters button
+                                Clear search.
+                                Clear status.
+                                Reset sort.
+                                Reset page.
+                                Remove the entire query string.
+                                Navigate with router.replace().
+                                                                                                        40 mins
+
+----------------------------------------------------------------------------------------------------------------
+
+Step 10
+
+    Build SWR data fetching
+
+                1. Create the fetcher
+                                Fetch the API URL.
+                                Parse JSON.
+                                Throw an error for unsuccessful responses.
+                
+                2. Build the dynamic SWR key
+                                Include normalized search.
+                                Include normalized status.
+                                Include normalized sort.
+                                Include normalized page.
+                
+                3. Configure loading behaviour
+                                Show a skeleton when no data is available for the current key.
+                                Avoid intentionally showing the previous filter combination’s results.
+                                Ensure changing any filter produces a different key.
+                
+                4. Handle errors
+                                Show an error message.
+                                Optionally provide a retry button using SWR’s mutate.
+
+                                                                                                        35 mins
+
+----------------------------------------------------------------------------------------------------------------
+
+Step 11
+
+    Build the client list UI
+
+                1. Render client rows
+                                Show client name.
+                                Show client email.
+                                Show client status.
+                
+                2. Build status badges
+                                Display Active.
+                                Display Cancelled.
+                                Display Past Due.
+                                Give each status a visually distinct badge.
+                
+                3. Add empty state
+                                Show “No clients found” when the result list is empty.
+                                Keep filters visible.
+                                                                                                        30 mins
+
+----------------------------------------------------------------------------------------------------------------
+
+Step 12
+
+    Build the loading skeleton
+
+                1. Create skeleton rows
+                                Add placeholder blocks for client names.
+                                Add placeholder blocks for emails.
+                                Add placeholder blocks for status badges.
+                                Render several rows.
+                
+                2. Use the skeleton in both places
+                                Use it as the Suspense fallback.
+                                Use it while SWR fetches a new uncached filter combination.
+                                                                                                        45 mins
+
+----------------------------------------------------------------------------------------------------------------
+
+Step 13
+
+    Build pagination
+
+                1. Previous button
+                                Navigate to the previous page.
+                                Use router.push().
+                                Preserve search, status, and sort.
+                                Disable it on page 1.
+                
+                2. Next button
+                                Navigate to the next page.
+                                Use router.push().
+                                Preserve search, status, and sort.
+                                Disable it on the final page.
+                
+                3. Display pagination information
+                                Show the current page.
+                                Show the last page.
+                                Optionally show the total number of clients.
+                                                                                                        30 mins
+
+----------------------------------------------------------------------------------------------------------------
+
+Step 14
 
     Make Tests Pass
 
@@ -172,51 +340,36 @@ Step 7
 
 ----------------------------------------------------------------------------------------------------------------
 
-Step 8
+Step 15
 
     Quality checks
                                                                                                     30 mins
 
 ----------------------------------------------------------------------------------------------------------------
 
-Step 9
+Step 16
 
     BEFORE-AFTER.md
                                                                                                     30 mins
 
 ----------------------------------------------------------------------------------------------------------------
 
-                                                                                                    7.8 hrs
+                                                                                                    11.5 hrs
 
 ---------------------------------------------------------------------------------------------------------------- 
 
-Step	Task	Estimate
-1	Create Next.js project and connect GitHub	10 min
-2	Complete UNDERSTANDING.md, manual estimate, AI estimate, reconciliation, and APPROACH.md	120 min
-3	Install SWR/testing packages and configure Vitest	20 min
-4	Write failing URL-state, debounce, and Clear filters tests	75 min
-5	Build mock /api/clients route with filtering, sorting, pagination, and 30+ clients	60 min
-6	Build filter controls, URL state, debounce, SWR fetching, list, skeleton, and pagination	120 min
-7	Make tests pass and manually test browser history/shareable URLs	60 min
-8	Run lint, TypeScript, tests, and production build	30 min
-9	Complete BEFORE-AFTER.md and final acceptance-criteria review	30 min
-	Total	525 min
-Estimated total
+AI Estimate
 
-8 hours 45 minutes
+I estimate that completing MA20 will take approximately 10 hours and 20 minutes.
 
-I would quote it as approximately 9 hours to allow a small buffer for mocking Next.js navigation hooks, fake-timer issues, and Suspense-related test setup.
+The project itself is relatively small, but additional time is needed for the URL-based state, debounce behaviour, router mocking, SWR cache keys, and browser-history requirements. These parts are likely to require more testing and debugging than the basic API and client-list UI.
 
 Reconciliation
 
-My manual estimate came to 7 hours 50 minutes, while the AI estimate came to 8 hours 45 minutes.
+My manual estimate was 11 hours.
 
-The AI estimate is a little higher because it gives more room for the parts of the task that could take longer than expected, mainly the URL state, debounce testing, SWR cache keys, and mocking the Next.js router in tests.
+The AI estimate was 10 hours and 20 minutes.
 
-I think my manual estimate is still realistic if everything goes smoothly, but it may be a bit tight if I run into issues with fake timers, browser history behaviour, or keeping the search input in sync with the URL.
+The AI estimate is 40 minutes lower because it expects the mock data, loading skeleton, and documentation evidence to take less time than I originally allowed. However, my manual estimate includes additional room for issues with fake timers, mocked Next.js navigation hooks, stale debounce callbacks, and synchronising the search field with browser navigation.
 
-After comparing both estimates, I think a fair final estimate is:
-
-8 hours 30 minutes
-
-I would round this up to around 9 hours to give myself a small buffer for debugging and final checks.
+For that reason, I will use 11 hours as my final estimate. This keeps the estimate realistic without adding an unnecessarily large buffer.
