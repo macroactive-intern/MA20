@@ -1,4 +1,4 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -65,15 +65,11 @@ describe("search debounce", () => {
   afterEach(() => vi.useRealTimers());
 
   it("updates the URL with the typed value after 300 ms", async () => {
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    });
     render(<ClientListPage />);
+    const input = screen.getByRole("textbox", { name: /search/i });
 
-    await user.type(screen.getByRole("textbox", { name: /search/i }), "john");
-    await act(async () => {
-      vi.advanceTimersByTime(300);
-    });
+    await act(async () => { fireEvent.change(input, { target: { value: "john" } }); });
+    await act(async () => { vi.advanceTimersByTime(300); });
 
     expect(mockReplace).toHaveBeenCalledWith(
       expect.stringContaining("search=john")
@@ -81,29 +77,23 @@ describe("search debounce", () => {
   });
 
   it("does not update the URL before 300 ms have elapsed", async () => {
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    });
     render(<ClientListPage />);
+    const input = screen.getByRole("textbox", { name: /search/i });
 
-    await user.type(screen.getByRole("textbox", { name: /search/i }), "alice");
-    await act(async () => {
-      vi.advanceTimersByTime(200);
-    });
+    await act(async () => { fireEvent.change(input, { target: { value: "alice" } }); });
+    await act(async () => { vi.advanceTimersByTime(200); });
 
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it("fires only once after rapid keystrokes", async () => {
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    });
     render(<ClientListPage />);
+    const input = screen.getByRole("textbox", { name: /search/i });
 
-    await user.type(screen.getByRole("textbox", { name: /search/i }), "john");
-    await act(async () => {
-      vi.advanceTimersByTime(300);
-    });
+    await act(async () => { fireEvent.change(input, { target: { value: "j" } }); });
+    await act(async () => { fireEvent.change(input, { target: { value: "jo" } }); });
+    await act(async () => { fireEvent.change(input, { target: { value: "john" } }); });
+    await act(async () => { vi.advanceTimersByTime(300); });
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith(

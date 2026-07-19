@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import ClientFilters from "./ClientFilters";
+
+const DEBOUNCE_MS = 300;
 
 export default function ClientListPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Refs prevent stale closures inside debounce and pagination effects
+  // Refs prevent stale closures inside the debounce timer callback
   const searchParamsRef = useRef(searchParams);
   const routerRef = useRef(router);
   const pathnameRef = useRef(pathname);
@@ -39,7 +42,6 @@ export default function ClientListPage() {
 
   // --- Query-update helpers ---
 
-  // Used by filter handlers (Steps 9+): resets page, preserves other params
   function buildFilterUrl(overrides: Record<string, string | null>): string {
     const params = new URLSearchParams(searchParamsRef.current.toString());
     params.delete("page");
@@ -54,7 +56,6 @@ export default function ClientListPage() {
     return qs ? `${pathnameRef.current}?${qs}` : pathnameRef.current;
   }
 
-  // Used by pagination (Step 13+): page 1 is the default so it is omitted
   function buildPageUrl(page: number): string {
     const params = new URLSearchParams(searchParamsRef.current.toString());
     if (page <= 1) {
@@ -66,8 +67,48 @@ export default function ClientListPage() {
     return qs ? `${pathnameRef.current}?${qs}` : pathnameRef.current;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  void urlStatus, urlSort, urlPage, inputSearch, buildFilterUrl, buildPageUrl, routerRef;
+  // --- Search debounce ---
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const currentSearch = searchParamsRef.current.get("search") ?? "";
+      if (inputSearch === currentSearch) return;
+      routerRef.current.replace(
+        buildFilterUrl({ search: inputSearch || null })
+      );
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputSearch]);
 
-  return <div />;
+  // --- Filter handlers ---
+
+  function handleStatusChange(value: string) {
+    router.replace(buildFilterUrl({ status: value || null }));
+  }
+
+  function handleSortChange(value: string) {
+    router.replace(buildFilterUrl({ sort: value === "name" ? null : value }));
+  }
+
+  function handleClearFilters() {
+    setInputSearch("");
+    router.replace(pathname);
+  }
+
+  void urlPage;
+  void buildPageUrl;
+
+  return (
+    <div className="space-y-4">
+      <ClientFilters
+        search={inputSearch}
+        status={urlStatus}
+        sort={urlSort}
+        onSearchChange={setInputSearch}
+        onStatusChange={handleStatusChange}
+        onSortChange={handleSortChange}
+        onClearFilters={handleClearFilters}
+      />
+    </div>
+  );
 }
