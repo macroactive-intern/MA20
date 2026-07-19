@@ -19,8 +19,8 @@ Error: Failed to resolve import "@/components/clients/ClientListPage" from "test
 
  Test Files  1 failed (1)
       Tests  no tests
-   Start at  09:29:30
-   Duration  1.22s (transform 0ms, setup 0ms, import 0ms, tests 0ms, environment 981ms)
+   Start at  10:11:00
+   Duration  1.60s (transform 0ms, setup 0ms, import 0ms, tests 0ms, environment 1.34s)
 ```
 
 ---

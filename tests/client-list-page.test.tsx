@@ -224,8 +224,10 @@ describe("pagination", () => {
 
     await user.click(screen.getByRole("button", { name: /previous/i }));
 
-    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("page=1"));
+    expect(mockPush).toHaveBeenCalled();
     expect(mockReplace).not.toHaveBeenCalled();
+    // page 1 is the default — the param is omitted, not set to "1"
+    expect(mockPush.mock.calls[0][0]).not.toMatch(/page=/);
   });
 
   it("disables the Previous button on page 1", () => {
